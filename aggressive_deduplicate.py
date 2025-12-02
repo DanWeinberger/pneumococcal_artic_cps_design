@@ -220,15 +220,18 @@ class AggressiveDeduplicator:
         Aggressive deduplication:
         1. For each serotype, cluster all overlapping amplicons
         2. Keep only ONE primer per cluster (the best one)
-        3. Result: completely non-overlapping amplicons
+        3. Ensure final set is non-overlapping per serotype
         """
         logger.info("\n" + "=" * 80)
         logger.info("AGGRESSIVE DEDUPLICATION")
         logger.info("=" * 80)
         logger.info(f"Minimum gap between amplicons: {self.min_gap}bp")
-        logger.info("Strategy: One primer per cluster of overlapping amplicons")
+        logger.info("Strategy: One primer per cluster of overlapping amplicons PER SEROTYPE")
         
-        # Process each serotype
+        # Track best primers per serotype (not global!)
+        serotype_selected = {}  # serotype -> list of primer names
+        
+        # Process each serotype independently
         for serotype in sorted(self.reference_loci.keys()):
             logger.info(f"\nProcessing {serotype}...")
             
@@ -255,6 +258,7 @@ class AggressiveDeduplicator:
             
             if not primers_data:
                 logger.info(f"  No primers for {serotype}")
+                serotype_selected[serotype] = []
                 continue
             
             logger.info(f"  Found {len(primers_data)} primers")
@@ -272,9 +276,10 @@ class AggressiveDeduplicator:
                 best_primer = primers_data[best_idx]
                 
                 selected_for_serotype.append(best_primer['name'])
-                self.selected_primers.add(best_primer['name'])
                 
                 logger.debug(f"    Cluster {cluster_idx}: {len(cluster)} primers → selected {best_primer['name']}")
+            
+            serotype_selected[serotype] = selected_for_serotype
             
             logger.info(f"  Selected {len(selected_for_serotype)} primers "
                        f"(removed {len(primers_data) - len(selected_for_serotype)})")
@@ -283,7 +288,44 @@ class AggressiveDeduplicator:
             if len(selected_for_serotype) < self.min_primers_per_serotype:
                 logger.warning(f"  ⚠ {serotype} has only {len(selected_for_serotype)} primers "
                              f"(min: {self.min_primers_per_serotype})")
-                logger.warning(f"    Consider lowering --min-gap or accepting overlap")
+        
+        # Now collect primers that are selected for ANY serotype
+        # CRITICAL: A primer is kept if it's selected for at least one serotype
+        all_selected = set()
+        for primers_list in serotype_selected.values():
+            all_selected.update(primers_list)
+        
+        self.selected_primers = all_selected
+        
+        # Verify no overlaps per serotype in final set
+        logger.info("\n" + "=" * 80)
+        logger.info("VERIFYING NON-OVERLAP")
+        logger.info("=" * 80)
+        
+        for serotype, selected_list in serotype_selected.items():
+            if not selected_list:
+                continue
+            
+            # Get positions of selected primers for this serotype
+            positions = []
+            for primer_name in selected_list:
+                if serotype in self.primer_positions[primer_name]:
+                    pos = self.primer_positions[primer_name][serotype]
+                    positions.append((pos['start'], pos['end'], primer_name))
+            
+            # Sort and check for overlaps
+            positions.sort()
+            has_overlap = False
+            
+            for i in range(len(positions) - 1):
+                if positions[i][1] > positions[i+1][0]:  # end of i > start of i+1
+                    logger.error(f"  ERROR: {serotype} has overlap: "
+                               f"{positions[i][2]} ({positions[i][0]}-{positions[i][1]}) and "
+                               f"{positions[i+1][2]} ({positions[i+1][0]}-{positions[i+1][1]})")
+                    has_overlap = True
+            
+            if not has_overlap:
+                logger.info(f"  ✓ {serotype}: {len(selected_list)} primers, no overlaps")
         
         logger.info("\n" + "=" * 80)
         logger.info("DEDUPLICATION SUMMARY")
