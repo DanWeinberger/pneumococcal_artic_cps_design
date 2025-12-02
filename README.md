@@ -55,20 +55,14 @@ salloc --time=04:30:00
 python aggressive_deduplicate.py \
   --database /gpfs/gibbs/project/weinberger_daniel/dmw63/artic_serotype/seroba/database \
   --primers final_optimized_v2/final_primers/optimized_multiplex_primers.csv \
-  --output ./truly_deduplicated_v2 \
+  --output ./final_truly_deduplicated \
   --min-gap 100
 
 
 python visualize_cps_coverage.py \
   --database /gpfs/gibbs/project/weinberger_daniel/dmw63/artic_serotype/seroba/database \
-  --primers truly_deduplicated_v2/deduplicated_primers.csv \
-  --output ./clean_coverage_v2 \
+  --primers final_truly_deduplicated/deduplicated_primers.csv \
+  --output ./clean_coverage_v3 \
   --plot-serotypes 14,19F,19A,6A,6B
-  
-  
-  
-  
-  
-  
   
   
