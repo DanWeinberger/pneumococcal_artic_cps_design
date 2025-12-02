@@ -50,20 +50,17 @@ python multiplex_primer_optimizer_claude2.py \
 
 ## Remove overlappying amplicons
 
-## Default (70% overlap threshold)
-python deduplicate_primers.py \
+python aggressive_deduplicate.py \
   --database /gpfs/gibbs/project/weinberger_daniel/dmw63/artic_serotype/seroba/database \
   --primers final_optimized_v2/final_primers/optimized_multiplex_primers.csv \
-  --output ./deduplicated_primers
+  --output ./truly_deduplicated
 
-## Visualize de-deuplicated amplicons
 
 python visualize_cps_coverage.py \
   --database /gpfs/gibbs/project/weinberger_daniel/dmw63/artic_serotype/seroba/database \
-  --primers deduplicated_primers/deduplicated_primers.csv \
-  --output ./final_coverage_check_deduplicated \
-  --plot-serotypes 19F,19A,6A,6B,37,3,7F,14,23F
-  
+  --primers truly_deduplicated/deduplicated_primers.csv \
+  --output ./clean_coverage \
+  --plot-serotypes 14,19F,19A,6A,6B
   
   
   
