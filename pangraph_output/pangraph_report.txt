@@ -1,0 +1,48 @@
+================================================================================
+PAN-GENOME GRAPH PRIMER DESIGN REPORT
+================================================================================
+
+PARAMETERS:
+  Window size: 1000 bp
+  Step size: 500 bp
+  K-mer size: 31
+  Similarity threshold: 0.8
+  Amplicon size: 500 bp
+
+RESULTS:
+  Reference loci: 130
+  Windows extracted: 4156
+  Clusters formed: 3383
+  Universal primers designed: 1867
+  Pool 1: 0
+  Pool 2: 1867
+
+EFFICIENCY:
+  Total sequence: 2,174,020 bp
+  Naive approach: ~4348 primers
+  Pan-graph approach: 1867 primers
+  Reduction: 57.1%
+
+TOP UNIVERSAL PRIMERS (covering most serotypes):
+   1. cluster_3173_amp1              covers  7 serotypes
+   2. cluster_3174_amp1              covers  7 serotypes
+   3. cluster_3178_amp1              covers  7 serotypes
+   4. cluster_3183_amp1              covers  7 serotypes
+   5. cluster_3187_amp1              covers  7 serotypes
+   6. cluster_1778_amp1              covers  6 serotypes
+   7. cluster_1779_amp1              covers  6 serotypes
+   8. cluster_1780_amp1              covers  6 serotypes
+   9. cluster_3194_amp1              covers  6 serotypes
+  10. cluster_3177_amp1              covers  5 serotypes
+  11. cluster_3196_amp1              covers  5 serotypes
+  12. cluster_3198_amp1              covers  5 serotypes
+  13. cluster_3199_amp1              covers  5 serotypes
+  14. cluster_810_amp1               covers  4 serotypes
+  15. cluster_1874_amp1              covers  4 serotypes
+  16. cluster_1875_amp1              covers  4 serotypes
+  17. cluster_3103_amp1              covers  4 serotypes
+  18. cluster_3117_amp1              covers  4 serotypes
+  19. cluster_3119_amp1              covers  4 serotypes
+  20. cluster_3120_amp1              covers  4 serotypes
+
+================================================================================

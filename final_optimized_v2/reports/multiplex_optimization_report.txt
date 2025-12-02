@@ -1,0 +1,28 @@
+================================================================================
+MULTIPLEX PRIMER OPTIMIZATION REPORT
+================================================================================
+
+ANALYSIS PARAMETERS:
+  K-mer size: 31
+  Max dimer ΔG: -9.0 kcal/mol
+  Max hairpin Tm: 50.0°C
+  Min primers/serotype: 5
+
+RESULTS:
+  Input primers: 1867
+  Primers with interactions: 3322
+  Final selected: 555
+  Reduction: 70.3%
+
+DISCRIMINATORY POWER DISTRIBUTION:
+  Mean: 0.731
+  Median: 0.677
+  Min: 0.568
+  Max: 1.000
+
+THERMODYNAMIC COMPATIBILITY:
+  pool2:
+    Strong dimers found: 10135
+    Hairpins found: 0
+
+================================================================================
