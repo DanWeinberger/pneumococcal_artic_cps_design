@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Aggressive Primer Deduplication using Interval Clustering
-Groups overlapping amplicons into clusters and keeps only the best primer per cluster
+Deduplication using Actual Primer Mapping
+Maps primers using in silico PCR, then deduplicates based on actual amplicon positions
 """
 
 import os
@@ -21,13 +21,11 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-class AggressiveDeduplicator:
-    """Aggressively remove ALL overlapping primers"""
+class TrueDeduplicator:
+    """Deduplicate using actual primer mapping, not metadata"""
     
     def __init__(self, database_dir, primer_file, output_dir,
-                 min_gap=100,  # Minimum gap between amplicons (bp)
-                 min_primers_per_serotype=5,
-                 max_mismatches=2):
+                 min_gap=100, min_primers_per_serotype=5, max_mismatches=2):
         self.database_dir = Path(database_dir)
         self.primer_file = Path(primer_file)
         self.output_dir = Path(output_dir)
@@ -39,7 +37,7 @@ class AggressiveDeduplicator:
         
         self.reference_loci = {}
         self.primers = None
-        self.primer_positions = {}
+        self.actual_amplicons = {}  # primer -> serotype -> {start, end, ...}
         self.selected_primers = set()
         
     def load_reference_loci(self):
@@ -90,12 +88,16 @@ class AggressiveDeduplicator:
         
         return best_match
     
-    def map_primer_positions(self):
-        """Map where each primer binds"""
-        logger.info("\nMapping primer positions...")
+    def map_all_primers(self):
+        """
+        Perform in silico PCR for ALL primers on ALL serotypes
+        This is the ground truth of what actually amplifies
+        """
+        logger.info("\nPerforming in silico PCR for all primers on all serotypes...")
+        logger.info("This may take a while...")
         
         for idx, primer_row in self.primers.iterrows():
-            if (idx + 1) % 100 == 0:
+            if (idx + 1) % 50 == 0:
                 logger.info(f"  Mapped {idx + 1}/{len(self.primers)} primers...")
             
             primer_name = primer_row['name']
@@ -103,7 +105,7 @@ class AggressiveDeduplicator:
             right_seq = primer_row['right_seq']
             right_seq_rc = str(Seq(right_seq).reverse_complement())
             
-            self.primer_positions[primer_name] = {}
+            self.actual_amplicons[primer_name] = {}
             
             for serotype, sequence in self.reference_loci.items():
                 left_match = self._find_primer_in_sequence(left_seq, sequence, self.max_mismatches)
@@ -112,31 +114,34 @@ class AggressiveDeduplicator:
                 if left_match and right_match and right_match['position'] > left_match['position']:
                     amplicon_start = left_match['position']
                     amplicon_end = right_match['position'] + len(right_seq)
+                    amplicon_size = amplicon_end - amplicon_start
                     
-                    self.primer_positions[primer_name][serotype] = {
-                        'start': amplicon_start,
-                        'end': amplicon_end,
-                        'size': amplicon_end - amplicon_start,
-                        'mismatches': left_match['mismatches'] + right_match['mismatches']
-                    }
+                    # Only keep reasonable amplicon sizes
+                    if 200 <= amplicon_size <= 1000:
+                        self.actual_amplicons[primer_name][serotype] = {
+                            'start': amplicon_start,
+                            'end': amplicon_end,
+                            'size': amplicon_size,
+                            'mismatches': left_match['mismatches'] + right_match['mismatches']
+                        }
         
-        logger.info(f"Mapped positions for {len(self.primer_positions)} primers")
-        return self.primer_positions
+        # Count how many primers amplify each serotype
+        logger.info("\nPrimers per serotype (before deduplication):")
+        for serotype in sorted(self.reference_loci.keys())[:20]:  # Show first 20
+            count = sum(1 for p in self.actual_amplicons.values() if serotype in p)
+            logger.info(f"  {serotype:20s}: {count:3d} primers")
+        logger.info("  ...")
+        
+        return self.actual_amplicons
     
     def _intervals_overlap(self, interval1, interval2, min_gap):
-        """
-        Check if two intervals overlap or are closer than min_gap
-        
-        Returns True if they should be considered overlapping
-        """
+        """Check if two intervals overlap"""
         start1, end1 = interval1
         start2, end2 = interval2
         
-        # If intervals overlap at all, they overlap
         if start2 <= end1 and start1 <= end2:
             return True
         
-        # If gap between them is less than min_gap, consider overlapping
         if start2 > end1:
             gap = start2 - end1
         else:
@@ -144,194 +149,90 @@ class AggressiveDeduplicator:
         
         return gap < min_gap
     
-    def _cluster_overlapping_intervals(self, intervals):
+    def deduplicate_globally(self):
         """
-        Group overlapping intervals into clusters
-        Returns list of clusters, where each cluster is a list of interval indices
+        Global deduplication across all serotypes
+        Select primers that create non-overlapping amplicons in EVERY serotype they amplify
         """
-        if not intervals:
-            return []
+        logger.info("\n" + "=" * 80)
+        logger.info("GLOBAL DEDUPLICATION")
+        logger.info("=" * 80)
+        logger.info(f"Strategy: Greedy selection ensuring no overlaps in ANY serotype")
         
-        # Sort by start position
-        sorted_indices = sorted(range(len(intervals)), 
-                               key=lambda i: intervals[i]['start'])
+        # Build per-serotype primer lists
+        serotype_primers = defaultdict(list)
+        for primer_name, serotypes_dict in self.actual_amplicons.items():
+            for serotype, pos in serotypes_dict.items():
+                serotype_primers[serotype].append({
+                    'name': primer_name,
+                    'start': pos['start'],
+                    'end': pos['end'],
+                    'mismatches': pos['mismatches']
+                })
         
-        clusters = []
-        current_cluster = [sorted_indices[0]]
+        # Greedy selection
+        selected_primers = set()
+        serotype_coverage = defaultdict(int)
+        serotype_covered_regions = defaultdict(list)  # serotype -> list of (start, end)
         
-        for i in sorted_indices[1:]:
-            # Check if this interval overlaps with any in current cluster
-            overlaps = False
+        # Sort all primers by how many serotypes they cover (prefer universal)
+        primer_serotype_counts = [(p, len(amps)) for p, amps in self.actual_amplicons.items()]
+        primer_serotype_counts.sort(key=lambda x: x[1], reverse=True)
+        
+        logger.info("\nPhase 1: Greedy selection...")
+        
+        for primer_name, num_serotypes in primer_serotype_counts:
+            # Check if this primer overlaps with any already-selected primer in ANY serotype
+            causes_overlap = False
             
-            for j in current_cluster:
-                if self._intervals_overlap(
-                    (intervals[i]['start'], intervals[i]['end']),
-                    (intervals[j]['start'], intervals[j]['end']),
-                    self.min_gap
-                ):
-                    overlaps = True
+            for serotype, pos in self.actual_amplicons[primer_name].items():
+                # Check against already covered regions in this serotype
+                for covered_start, covered_end in serotype_covered_regions[serotype]:
+                    if self._intervals_overlap(
+                        (pos['start'], pos['end']),
+                        (covered_start, covered_end),
+                        self.min_gap
+                    ):
+                        causes_overlap = True
+                        break
+                
+                if causes_overlap:
                     break
             
-            if overlaps:
-                current_cluster.append(i)
-            else:
-                # Start new cluster
-                clusters.append(current_cluster)
-                current_cluster = [i]
+            if not causes_overlap:
+                # Add this primer
+                selected_primers.add(primer_name)
+                
+                # Mark regions as covered
+                for serotype, pos in self.actual_amplicons[primer_name].items():
+                    serotype_covered_regions[serotype].append((pos['start'], pos['end']))
+                    serotype_coverage[serotype] += 1
         
-        # Add last cluster
-        if current_cluster:
-            clusters.append(current_cluster)
+        logger.info(f"Phase 1 complete: {len(selected_primers)} primers selected")
         
-        return clusters
-    
-    def _select_best_from_cluster(self, cluster_intervals, primers_data):
-        """
-        Select the best primer from a cluster
-        Prioritize: 1) fewest mismatches, 2) most central position, 3) best discriminatory score
-        """
-        if len(cluster_intervals) == 1:
-            return cluster_intervals[0]
-        
-        # Score each primer
-        scores = []
-        
-        for interval_idx in cluster_intervals:
-            primer_info = primers_data[interval_idx]
-            
-            # Lower mismatches is better
-            mismatch_score = -primer_info['mismatches']
-            
-            # Central position is better (avoid edges)
-            position_score = 0  # Could be improved with more context
-            
-            # Discriminatory score if available
-            disc_score = primer_info.get('discriminatory_score', 0)
-            
-            total_score = mismatch_score * 10 + disc_score
-            scores.append((total_score, interval_idx))
-        
-        # Return best scoring primer
-        best = max(scores, key=lambda x: x[0])
-        return best[1]
-    
-    def deduplicate_aggressive(self):
-        """
-        Aggressive deduplication:
-        1. For each serotype, cluster all overlapping amplicons
-        2. Keep only ONE primer per cluster (the best one)
-        3. Ensure final set is non-overlapping per serotype
-        """
-        logger.info("\n" + "=" * 80)
-        logger.info("AGGRESSIVE DEDUPLICATION")
-        logger.info("=" * 80)
-        logger.info(f"Minimum gap between amplicons: {self.min_gap}bp")
-        logger.info("Strategy: One primer per cluster of overlapping amplicons PER SEROTYPE")
-        
-        # Track best primers per serotype (not global!)
-        serotype_selected = {}  # serotype -> list of primer names
-        
-        # Process each serotype independently
+        # Check coverage
+        logger.info("\nCoverage per serotype:")
+        low_coverage_serotypes = []
         for serotype in sorted(self.reference_loci.keys()):
-            logger.info(f"\nProcessing {serotype}...")
+            count = serotype_coverage.get(serotype, 0)
+            status = "✓" if count >= self.min_primers_per_serotype else "⚠"
+            if count < self.min_primers_per_serotype:
+                low_coverage_serotypes.append(serotype)
             
-            # Get all primers for this serotype
-            primers_data = []
-            for primer_name, positions in self.primer_positions.items():
-                if serotype in positions:
-                    pos = positions[serotype]
-                    
-                    # Get discriminatory score if available
-                    primer_row = self.primers[self.primers['name'] == primer_name]
-                    disc_score = 0
-                    if len(primer_row) > 0 and 'discriminatory_score' in primer_row.columns:
-                        disc_score = primer_row.iloc[0]['discriminatory_score']
-                    
-                    primers_data.append({
-                        'name': primer_name,
-                        'start': pos['start'],
-                        'end': pos['end'],
-                        'size': pos['size'],
-                        'mismatches': pos['mismatches'],
-                        'discriminatory_score': disc_score
-                    })
-            
-            if not primers_data:
-                logger.info(f"  No primers for {serotype}")
-                serotype_selected[serotype] = []
-                continue
-            
-            logger.info(f"  Found {len(primers_data)} primers")
-            
-            # Cluster overlapping intervals
-            clusters = self._cluster_overlapping_intervals(primers_data)
-            
-            logger.info(f"  Grouped into {len(clusters)} non-overlapping clusters")
-            
-            # Select best primer from each cluster
-            selected_for_serotype = []
-            
-            for cluster_idx, cluster in enumerate(clusters, 1):
-                best_idx = self._select_best_from_cluster(cluster, primers_data)
-                best_primer = primers_data[best_idx]
-                
-                selected_for_serotype.append(best_primer['name'])
-                
-                logger.debug(f"    Cluster {cluster_idx}: {len(cluster)} primers → selected {best_primer['name']}")
-            
-            serotype_selected[serotype] = selected_for_serotype
-            
-            logger.info(f"  Selected {len(selected_for_serotype)} primers "
-                       f"(removed {len(primers_data) - len(selected_for_serotype)})")
-            
-            # Check minimum coverage
-            if len(selected_for_serotype) < self.min_primers_per_serotype:
-                logger.warning(f"  ⚠ {serotype} has only {len(selected_for_serotype)} primers "
-                             f"(min: {self.min_primers_per_serotype})")
+            if count > 0 or serotype in list(self.reference_loci.keys())[:20]:
+                logger.info(f"  {status} {serotype:20s}: {count:3d} primers")
         
-        # Now collect primers that are selected for ANY serotype
-        # CRITICAL: A primer is kept if it's selected for at least one serotype
-        all_selected = set()
-        for primers_list in serotype_selected.values():
-            all_selected.update(primers_list)
+        if low_coverage_serotypes:
+            logger.warning(f"\n{len(low_coverage_serotypes)} serotypes have insufficient coverage")
+            logger.warning("Consider lowering --min-gap to allow closer amplicons")
         
-        self.selected_primers = all_selected
-        
-        # Verify no overlaps per serotype in final set
-        logger.info("\n" + "=" * 80)
-        logger.info("VERIFYING NON-OVERLAP")
-        logger.info("=" * 80)
-        
-        for serotype, selected_list in serotype_selected.items():
-            if not selected_list:
-                continue
-            
-            # Get positions of selected primers for this serotype
-            positions = []
-            for primer_name in selected_list:
-                if serotype in self.primer_positions[primer_name]:
-                    pos = self.primer_positions[primer_name][serotype]
-                    positions.append((pos['start'], pos['end'], primer_name))
-            
-            # Sort and check for overlaps
-            positions.sort()
-            has_overlap = False
-            
-            for i in range(len(positions) - 1):
-                if positions[i][1] > positions[i+1][0]:  # end of i > start of i+1
-                    logger.error(f"  ERROR: {serotype} has overlap: "
-                               f"{positions[i][2]} ({positions[i][0]}-{positions[i][1]}) and "
-                               f"{positions[i+1][2]} ({positions[i+1][0]}-{positions[i+1][1]})")
-                    has_overlap = True
-            
-            if not has_overlap:
-                logger.info(f"  ✓ {serotype}: {len(selected_list)} primers, no overlaps")
+        self.selected_primers = selected_primers
         
         logger.info("\n" + "=" * 80)
         logger.info("DEDUPLICATION SUMMARY")
         logger.info("=" * 80)
         logger.info(f"Original primers: {len(self.primers)}")
-        logger.info(f"Deduplicated primers: {len(self.selected_primers)}")
+        logger.info(f"Selected primers: {len(self.selected_primers)}")
         logger.info(f"Removed: {len(self.primers) - len(self.selected_primers)} "
                    f"({(1 - len(self.selected_primers)/len(self.primers))*100:.1f}%)")
         
@@ -343,11 +244,7 @@ class AggressiveDeduplicator:
         
         dedup_df = self.primers[self.primers['name'].isin(self.selected_primers)]
         
-        # Sort by pool and position
-        if 'pool' in dedup_df.columns:
-            dedup_df = dedup_df.sort_values(['pool', 'left_pos'] if 'left_pos' in dedup_df.columns else 'pool')
-        
-        output_file = self.output_dir / "deduplicated_primers.csv"
+        output_file = self.output_dir / "truly_deduplicated_primers.csv"
         dedup_df.to_csv(output_file, index=False)
         logger.info(f"  Saved: {output_file}")
         
@@ -356,7 +253,7 @@ class AggressiveDeduplicator:
             if 'pool' in dedup_df.columns:
                 pool_df = dedup_df[dedup_df['pool'] == pool_name]
                 if len(pool_df) > 0:
-                    pool_file = self.output_dir / f"{pool_name}_deduplicated.csv"
+                    pool_file = self.output_dir / f"{pool_name}_truly_deduplicated.csv"
                     pool_df.to_csv(pool_file, index=False)
                     logger.info(f"  {pool_name}: {pool_file} ({len(pool_df)} primers)")
         
@@ -364,20 +261,28 @@ class AggressiveDeduplicator:
     
     def generate_report(self):
         """Generate report"""
-        report_file = self.output_dir / "deduplication_report.txt"
+        report_file = self.output_dir / "true_deduplication_report.txt"
+        
+        # Calculate coverage per serotype
+        serotype_counts = defaultdict(int)
+        for primer_name in self.selected_primers:
+            for serotype in self.actual_amplicons[primer_name].keys():
+                serotype_counts[serotype] += 1
         
         with open(report_file, 'w') as f:
             f.write("=" * 80 + "\n")
-            f.write("AGGRESSIVE PRIMER DEDUPLICATION REPORT\n")
+            f.write("TRUE DEDUPLICATION REPORT\n")
+            f.write("(Using actual in silico PCR mapping)\n")
             f.write("=" * 80 + "\n\n")
             
-            f.write("STRATEGY:\n")
-            f.write("  - Cluster all overlapping/nearby amplicons per serotype\n")
-            f.write("  - Keep only the BEST primer from each cluster\n")
-            f.write("  - Result: Zero overlap between amplicons\n\n")
+            f.write("METHOD:\n")
+            f.write("  1. Mapped ALL primers to ALL serotypes using in silico PCR\n")
+            f.write("  2. Greedy selection ensuring no overlaps in ANY serotype\n")
+            f.write("  3. Result: Globally non-overlapping primer set\n\n")
             
             f.write("PARAMETERS:\n")
             f.write(f"  Minimum gap: {self.min_gap}bp\n")
+            f.write(f"  Max mismatches: {self.max_mismatches}\n")
             f.write(f"  Min primers per serotype: {self.min_primers_per_serotype}\n\n")
             
             f.write("RESULTS:\n")
@@ -385,12 +290,9 @@ class AggressiveDeduplicator:
             f.write(f"  Output primers: {len(self.selected_primers)}\n")
             f.write(f"  Reduction: {(1 - len(self.selected_primers)/len(self.primers))*100:.1f}%\n\n")
             
-            f.write("COVERAGE PER SEROTYPE (non-overlapping primers):\n")
-            
+            f.write("NON-OVERLAPPING PRIMERS PER SEROTYPE:\n")
             for serotype in sorted(self.reference_loci.keys()):
-                count = sum(1 for name in self.selected_primers 
-                           if serotype in self.primer_positions.get(name, {}))
-                
+                count = serotype_counts.get(serotype, 0)
                 status = "OK" if count >= self.min_primers_per_serotype else "LOW"
                 f.write(f"  {serotype:30s}: {count:3d} primers [{status}]\n")
             
@@ -404,16 +306,14 @@ def main():
     import argparse
     
     parser = argparse.ArgumentParser(
-        description='Aggressively remove ALL overlapping primers'
+        description='True deduplication using actual primer mapping'
     )
     
     parser.add_argument('--database', required=True)
     parser.add_argument('--primers', required=True)
     parser.add_argument('--output', required=True)
-    parser.add_argument('--min-gap', type=int, default=100,
-                       help='Minimum gap between amplicons (bp, default: 100)')
-    parser.add_argument('--min-per-serotype', type=int, default=5,
-                       help='Min primers per serotype (default: 5)')
+    parser.add_argument('--min-gap', type=int, default=100)
+    parser.add_argument('--min-per-serotype', type=int, default=5)
     parser.add_argument('--max-mismatches', type=int, default=2)
     parser.add_argument('--debug', action='store_true')
     
@@ -422,7 +322,7 @@ def main():
     if args.debug:
         logger.setLevel(logging.DEBUG)
     
-    deduplicator = AggressiveDeduplicator(
+    deduplicator = TrueDeduplicator(
         database_dir=args.database,
         primer_file=args.primers,
         output_dir=args.output,
@@ -433,19 +333,18 @@ def main():
     
     try:
         logger.info("=" * 80)
-        logger.info("AGGRESSIVE PRIMER DEDUPLICATION")
+        logger.info("TRUE DEDUPLICATION (USING ACTUAL PRIMER MAPPING)")
         logger.info("=" * 80)
         
         deduplicator.load_reference_loci()
         deduplicator.load_primers()
-        deduplicator.map_primer_positions()
-        deduplicator.deduplicate_aggressive()
+        deduplicator.map_all_primers()  # Key difference: actual mapping!
+        deduplicator.deduplicate_globally()
         deduplicator.export_primers()
         deduplicator.generate_report()
         
         logger.info("=" * 80)
         logger.info("COMPLETE!")
-        logger.info("Result: ZERO overlapping amplicons per serotype")
         logger.info("=" * 80)
         
     except Exception as e:
