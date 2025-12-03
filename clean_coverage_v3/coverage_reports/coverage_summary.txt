@@ -1,0 +1,150 @@
+================================================================================
+CPS LOCUS COVERAGE SUMMARY
+================================================================================
+
+Total serotypes: 130
+Average coverage: 35.4%
+Min coverage: 14.7%
+Max coverage: 54.7%
+
+Coverage distribution:
+    0- 25%:  17 serotypes
+   25- 50%: 111 serotypes
+   50- 75%:   2 serotypes
+   75- 90%:   0 serotypes
+   90-100%:   0 serotypes
+
+================================================================================
+PER-SEROTYPE DETAILS
+================================================================================
+
+19AIII               | 14,949 bp |  14 amplicons |   54.7% covered
+19A                  | 14,949 bp |  14 amplicons |   54.7% covered
+06D                  | 14,604 bp |  12 amplicons |   48.6% covered
+06A                  | 14,796 bp |  12 amplicons |   48.0% covered
+06C                  | 16,027 bp |  13 amplicons |   47.9% covered
+06AVI                | 16,239 bp |  13 amplicons |   47.5% covered
+06AIII               | 16,188 bp |  13 amplicons |   47.5% covered
+06BII                | 16,190 bp |  13 amplicons |   47.5% covered
+06AII                | 16,217 bp |  13 amplicons |   47.4% covered
+06BI                 | 16,357 bp |  13 amplicons |   47.0% covered
+06AIV                | 16,531 bp |  13 amplicons |   46.5% covered
+19AI                 | 15,204 bp |  12 amplicons |   46.1% covered
+19AF                 | 14,019 bp |  11 amplicons |   45.8% covered
+19AII                | 15,426 bp |  12 amplicons |   45.4% covered
+24F2                 | 20,781 bp |  16 amplicons |   45.4% covered
+24B                  | 20,790 bp |  16 amplicons |   45.4% covered
+24F                  | 20,792 bp |  16 amplicons |   45.4% covered
+NCC2_aliC_aliD_non_encapsulated |  6,600 bp |   5 amplicons |   44.7% covered
+06B                  | 15,935 bp |  12 amplicons |   44.5% covered
+31                   | 20,043 bp |  15 amplicons |   43.9% covered
+06AI                 | 16,186 bp |  12 amplicons |   43.8% covered
+06AV                 | 16,191 bp |  12 amplicons |   43.8% covered
+41A                  | 19,176 bp |  14 amplicons |   42.9% covered
+06F                  | 18,756 bp |  14 amplicons |   42.4% covered
+06G                  | 18,783 bp |  14 amplicons |   42.4% covered
+17F                  | 21,077 bp |  15 amplicons |   42.2% covered
+33G                  | 16,805 bp |  12 amplicons |   42.1% covered
+23B                  | 19,651 bp |  14 amplicons |   42.0% covered
+12A                  | 19,954 bp |  14 amplicons |   41.4% covered
+46                   | 19,954 bp |  14 amplicons |   41.4% covered
+24C                  | 23,516 bp |  17 amplicons |   41.2% covered
+23F                  | 18,651 bp |  13 amplicons |   41.0% covered
+27                   | 17,431 bp |  12 amplicons |   40.6% covered
+02                   | 17,501 bp |  12 amplicons |   40.5% covered
+33F                  | 14,496 bp |  10 amplicons |   40.3% covered
+41F                  | 20,437 bp |  14 amplicons |   40.2% covered
+12B                  | 19,072 bp |  13 amplicons |   40.2% covered
+NCC2_S_mitis_aliC_aliD_non_encapsulated |  5,927 bp |   4 amplicons |   39.8% covered
+15F                  | 20,640 bp |  14 amplicons |   39.8% covered
+19FII                | 14,819 bp |  10 amplicons |   39.7% covered
+19FIV                | 14,819 bp |  10 amplicons |   39.7% covered
+33H                  | 19,401 bp |  13 amplicons |   39.4% covered
+11F                  | 14,857 bp |  10 amplicons |   39.4% covered
+18F                  | 21,009 bp |  14 amplicons |   39.3% covered
+32F                  | 17,968 bp |  12 amplicons |   39.2% covered
+11F_like             | 14,871 bp |  10 amplicons |   39.2% covered
+11E                  | 14,880 bp |  10 amplicons |   39.2% covered
+15A                  | 16,472 bp |  11 amplicons |   39.1% covered
+07C                  | 18,402 bp |  12 amplicons |   38.5% covered
+28F                  | 19,963 bp |  13 amplicons |   38.3% covered
+28A                  | 19,948 bp |  13 amplicons |   38.3% covered
+37                   |  1,530 bp |   1 amplicons |   38.2% covered
+15D                  | 20,128 bp |  13 amplicons |   38.0% covered
+10A                  | 14,102 bp |   9 amplicons |   37.9% covered
+03                   |  4,586 bp |   3 amplicons |   37.9% covered
+34                   | 13,974 bp |   9 amplicons |   37.8% covered
+19B                  | 18,863 bp |  12 amplicons |   37.6% covered
+33A                  | 15,634 bp |  10 amplicons |   37.3% covered
+44                   | 19,079 bp |  12 amplicons |   37.0% covered
+12F                  | 19,081 bp |  12 amplicons |   37.0% covered
+22F                  | 20,719 bp |  13 amplicons |   36.7% covered
+35A                  | 17,652 bp |  11 amplicons |   36.5% covered
+24A                  | 19,616 bp |  12 amplicons |   36.2% covered
+07B                  | 19,546 bp |  12 amplicons |   36.2% covered
+40                   | 19,539 bp |  12 amplicons |   36.2% covered
+19FI                 | 14,819 bp |   9 amplicons |   35.8% covered
+19F                  | 14,820 bp |   9 amplicons |   35.8% covered
+19FIII               | 14,820 bp |   9 amplicons |   35.8% covered
+11D                  | 14,798 bp |   9 amplicons |   35.7% covered
+11A                  | 14,798 bp |   9 amplicons |   35.7% covered
+35B                  | 14,755 bp |   9 amplicons |   35.6% covered
+NCC3_aliD_non_encapsulated |  5,001 bp |   3 amplicons |   35.2% covered
+48                   | 18,646 bp |  11 amplicons |   35.0% covered
+35D                  | 15,129 bp |   9 amplicons |   34.8% covered
+19C                  | 22,064 bp |  13 amplicons |   34.7% covered
+32A                  | 16,973 bp |  10 amplicons |   34.6% covered
+33E                  | 18,603 bp |  11 amplicons |   34.6% covered
+23A                  | 18,768 bp |  11 amplicons |   34.5% covered
+45                   | 24,088 bp |  14 amplicons |   34.3% covered
+01                   | 17,338 bp |  10 amplicons |   34.2% covered
+streptococcus-pneumoniae-ctvdb | 17,340 bp |  10 amplicons |   34.1% covered
+18A                  | 18,984 bp |  11 amplicons |   34.1% covered
+10B                  | 14,093 bp |   8 amplicons |   33.8% covered
+33B                  | 15,694 bp |   9 amplicons |   33.6% covered
+47F                  | 13,963 bp |   8 amplicons |   33.5% covered
+42                   | 17,649 bp |  10 amplicons |   33.1% covered
+35C                  | 17,649 bp |  10 amplicons |   33.1% covered
+21                   | 19,663 bp |  11 amplicons |   32.8% covered
+04                   | 16,368 bp |   9 amplicons |   32.6% covered
+23B1                 | 21,797 bp |  12 amplicons |   32.5% covered
+15B                  | 16,577 bp |   9 amplicons |   31.7% covered
+15C                  | 16,579 bp |   9 amplicons |   31.7% covered
+22A                  | 20,775 bp |  11 amplicons |   31.3% covered
+06E                  | 15,134 bp |   8 amplicons |   31.3% covered
+10C                  | 15,224 bp |   8 amplicons |   31.0% covered
+10F                  | 15,231 bp |   8 amplicons |   31.0% covered
+09A                  | 17,308 bp |   9 amplicons |   30.5% covered
+09V                  | 17,309 bp |   9 amplicons |   30.5% covered
+33D                  | 15,662 bp |   8 amplicons |   29.9% covered
+08                   | 12,068 bp |   6 amplicons |   29.0% covered
+18B                  | 20,252 bp |  10 amplicons |   29.0% covered
+18C                  | 20,252 bp |  10 amplicons |   29.0% covered
+07F                  | 20,450 bp |  10 amplicons |   28.7% covered
+07A                  | 20,469 bp |  10 amplicons |   28.7% covered
+35F                  | 12,625 bp |   6 amplicons |   27.8% covered
+17A                  | 21,503 bp |  10 amplicons |   27.3% covered
+25A                  | 17,226 bp |   8 amplicons |   27.2% covered
+25F                  | 17,226 bp |   8 amplicons |   27.2% covered
+47A                  | 15,152 bp |   7 amplicons |   27.0% covered
+10D                  | 15,249 bp |   7 amplicons |   26.9% covered
+16A                  | 20,253 bp |   9 amplicons |   26.2% covered
+20A                  | 18,024 bp |   8 amplicons |   26.1% covered
+16F                  | 18,420 bp |   8 amplicons |   25.6% covered
+05                   | 16,355 bp |   7 amplicons |   24.9% covered
+33C                  | 14,308 bp |   6 amplicons |   24.7% covered
+20C                  | 16,761 bp |   7 amplicons |   23.8% covered
+NCC1_pspK_non_encapsulated |  5,064 bp |   2 amplicons |   23.6% covered
+20B                  | 17,586 bp |   7 amplicons |   23.4% covered
+14                   | 12,876 bp |   5 amplicons |   22.6% covered
+09N                  | 15,543 bp |   6 amplicons |   22.4% covered
+09L                  | 15,542 bp |   6 amplicons |   22.4% covered
+36B                  | 21,895 bp |   9 amplicons |   22.3% covered
+11B                  | 13,401 bp |   5 amplicons |   21.6% covered
+38                   | 14,694 bp |   5 amplicons |   19.9% covered
+29                   | 12,164 bp |   4 amplicons |   19.1% covered
+36A                  | 19,113 bp |   6 amplicons |   18.5% covered
+13                   | 15,817 bp |   5 amplicons |   18.5% covered
+11C                  | 13,384 bp |   4 amplicons |   17.5% covered
+43                   | 17,768 bp |   5 amplicons |   16.5% covered
+39                   | 15,862 bp |   4 amplicons |   14.7% covered
