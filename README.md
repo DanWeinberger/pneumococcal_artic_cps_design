@@ -68,3 +68,12 @@ python visualize_cps_coverage.py \
   --plot-serotypes 14,19F,19A,6A,6B
   
   
+## In silico experiments
+salloc --time=04:30:00
+  
+python simulate_mixtures.py \
+  --database /gpfs/gibbs/project/weinberger_daniel/dmw63/artic_serotype/seroba/database \
+  --primers final_truly_deduplicated/truly_deduplicated_primers.csv \
+  --output ./mixture_validation_pcr
+
+  
